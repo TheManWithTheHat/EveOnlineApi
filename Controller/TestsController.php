@@ -22,12 +22,17 @@
  * along with this project.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class EveOnlineApiAppController extends AppController {
+App::uses('EveOnlineApiAppController', 'EveOnlineApi.Controller');
 
-	public function beforeFilter() {
-		parent::beforeFilter();
+class TestsController extends EveOnlineApiAppController {
 
+/*
+ * Controller for testing, without model
+ */
+
+	var $uses = null;
+
+	public function test() {
 	}
 
 }
-

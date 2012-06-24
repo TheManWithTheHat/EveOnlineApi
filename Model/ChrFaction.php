@@ -22,12 +22,28 @@
  * along with this project.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class EveOnlineApiAppController extends AppController {
-
-	public function beforeFilter() {
-		parent::beforeFilter();
-
-	}
-
+App::uses('EveOnlineApiAppModel', 'EveOnlineApi.Model');
+/**
+ * ChrFaction Model
+ *
+ */
+class ChrFaction extends EveOnlineApiAppModel {
+/**
+ * Use database config
+ *
+ * @var string
+ */
+	public $useDbConfig = 'evedump';
+/**
+ * Use table
+ *
+ * @var mixed False or table name
+ */
+	public $useTable = 'chrFactions';
+/**
+ * Primary key field
+ *
+ * @var string
+ */
+	public $primaryKey = 'factionID';
 }
-

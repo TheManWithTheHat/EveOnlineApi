@@ -22,12 +22,28 @@
  * along with this project.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class EveOnlineApiAppController extends AppController {
-
-	public function beforeFilter() {
-		parent::beforeFilter();
-
-	}
-
+App::uses('EveOnlineApiAppModel', 'EveOnlineApi.Model');
+/**
+ * MapUniverse Model
+ *
+ */
+class MapUniverse extends EveOnlineApiAppModel {
+/**
+ * Use database config
+ *
+ * @var string
+ */
+	public $useDbConfig = 'evedump';
+/**
+ * Use table
+ *
+ * @var mixed False or table name
+ */
+	public $useTable = 'mapUniverse';
+/**
+ * Primary key field
+ *
+ * @var string
+ */
+	public $primaryKey = 'universeID';
 }
-

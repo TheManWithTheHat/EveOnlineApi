@@ -22,12 +22,45 @@
  * along with this project.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class EveOnlineApiAppController extends AppController {
-
-	public function beforeFilter() {
-		parent::beforeFilter();
-
-	}
-
+App::uses('EveOnlineApiAppModel', 'EveOnlineApi.Model');
+/**
+ * AgtConfig Model
+ *
+ */
+class AgtConfig extends EveOnlineApiAppModel {
+/**
+ * Use database config
+ *
+ * @var string
+ */
+	public $useDbConfig = 'evedump';
+/**
+ * Use table
+ *
+ * @var mixed False or table name
+ */
+	public $useTable = 'agtConfig';
+/**
+ * Primary key field
+ *
+ * @var string
+ */
+	public $primaryKey = 'agentID';
+/**
+ * Validation rules
+ *
+ * @var array
+ */
+	public $validate = array(
+		'k' => array(
+			'notempty' => array(
+				'rule' => array('notempty'),
+				//'message' => 'Your custom message here',
+				//'allowEmpty' => false,
+				//'required' => false,
+				//'last' => false, // Stop validation after this rule
+				//'on' => 'create', // Limit validation to 'create' or 'update' operations
+			),
+		),
+	);
 }
-

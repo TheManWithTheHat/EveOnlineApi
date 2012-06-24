@@ -22,12 +22,45 @@
  * along with this project.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class EveOnlineApiAppController extends AppController {
-
-	public function beforeFilter() {
-		parent::beforeFilter();
-
-	}
-
+App::uses('EveOnlineApiAppModel', 'EveOnlineApi.Model');
+/**
+ * PlanetSchematicsPinMap Model
+ *
+ */
+class PlanetSchematicsPinMap extends EveOnlineApiAppModel {
+/**
+ * Use database config
+ *
+ * @var string
+ */
+	public $useDbConfig = 'evedump';
+/**
+ * Use table
+ *
+ * @var mixed False or table name
+ */
+	public $useTable = 'planetSchematicsPinMap';
+/**
+ * Primary key field
+ *
+ * @var string
+ */
+	public $primaryKey = 'schematicID';
+/**
+ * Validation rules
+ *
+ * @var array
+ */
+	public $validate = array(
+		'pinTypeID' => array(
+			'numeric' => array(
+				'rule' => array('numeric'),
+				//'message' => 'Your custom message here',
+				//'allowEmpty' => false,
+				//'required' => false,
+				//'last' => false, // Stop validation after this rule
+				//'on' => 'create', // Limit validation to 'create' or 'update' operations
+			),
+		),
+	);
 }
-
