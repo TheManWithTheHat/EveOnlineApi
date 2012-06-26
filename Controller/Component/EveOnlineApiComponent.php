@@ -96,10 +96,81 @@ class EveOnlineApiComponent extends Component {
 				'ServerStatus' => 'https://api.eveonline.com/server/ServerStatus.xml.aspx/'
 	);
 
+	public $accessMasks = array(
+		'CharacterLocations' 			=> 134217728,	// Allows the fetching of coordinate and name data for items owned by the character.
+		'CharacterContracts' 			=> 67108864,	// List of all Contracts the character is involved in.
+		'AccountStatus' 			=> 33554432,	// EVE player account status.
+		'CharacterCharacterInfo' 		=> 16777216,	/* Sensitive Character Information, exposes account balance and last known location
+									 * on top of the other Character Information call.
+									 */
+		'CharacterInfo'		 		=> 8388608,	/* Character information, exposes skill points and current ship information on top
+									 * of Show Infoinformation.
+									 */
+		'CharacterWalletTransactions' 		=> 4194304,	// Market transaction journal of character.
+		'CharacterWalletJournal' 		=> 2097152,	// Wallet journal of character.
+		'CharacterUpcomingCalendarEvents' 	=> 1048576,	// Upcoming events on characters calendar.
+		'CharacterStandings' 			=> 524288,	// NPC Standings towards the character.
+		'CharacterSkillQueue' 			=> 262144,	// Entire skill queue of character.
+		'CharacterSkillInTraining' 		=> 131072,	// Skill currently in training on the character. Subset of entire Skill Queue.
+		'CharacterResearch' 			=> 65536,	/* List of all Research agents working for the character and the progress of the 
+									 * research.
+									 */
+		'CharacterNotificationTexts' 		=> 32768,	/* Actual body of notifications sent to the character. Requires Notification access 
+									 * to function.
+									 */
+		'CharacterNotifications' 		=> 16384,	// List of recent notifications sent to the character.
+		'CharacterMedals' 			=> 8192,	// Medals awarded to the character.
+		'CharacterMarketOrders' 		=> 4096,	// List of all Market Orders the character has made.
+		'CharacterMailMessages' 		=> 2048,	// List of all messages in the characters EVE Mail Inbox.
+		'CharacterMailingLists' 		=> 1024,	// List of all Mailing Lists the character subscribes to.
+		'CharacterMailBodies' 			=> 512,		// EVE Mail bodies. Requires MailMessages as well to function.
+		'CharacterKillLog' 			=> 256,		// Characters kill log.
+		'CharacterIndustryJobs' 		=> 128,		// Character jobs, completed and active.
+		'CharacterFacWarStats' 			=> 64,		// Characters Factional Warfare Statistics.
+		'CharacterContactNotifications' 	=> 32,		// Most recent contact notifications for the character.
+		'CharacterContactList' 			=> 16,		// List of character contacts and relationship levels.
+		'CharacterCharacterSheet' 		=> 8,		/* Character Sheet information. Contains basicShow Infoinformation along with 
+									 * clones, account balance, implants, attributes, skills, certificates and 
+									 * corporation roles.'
+									 */
+		'CharacterCalendarEventAttendees' 	=> 4,		// Event attendee responses. Requires UpcomingCalendarEvents to function.
+		'CharacterAssetList' 			=> 2,		// Entire asset list of character.
+		'CharacterAccountBalance' 		=> 1,		// Current balance of characters wallet.
+		'CorporationMemberTrackingExtended' 	=> 33554432,	// Extensive Member information. Time of last logoff, last known location and ship.
+		'CorporationLocations' 			=> 16777216,	/* Allows the fetching of coordinate and name data for items owned by the 	
+									 * corporation.
+									 */
+		'CorporationContracts' 			=> 8388608,	// List of recent Contracts the corporation is involved in.
+		'CorporationTitles' 			=> 4194304,	// Titles of corporation and the roles they grant.
+		'CorporationWalletTransactions' 	=> 2097152,	// Market transactions of all corporate accounts.
+		'CorporationWalletJournal' 		=> 1048576,	// Wallet journal for all corporate accounts.
+		'CorporationStarbaseList' 		=> 524288,	// List of all corporate starbases.
+		'CorporationStandings' 			=> 262144,	// NPC Standings towards corporation.
+		'CorporationStarbaseDetail'		=> 131072,	// List of all settings of corporate starbases.
+		'CorporationShareholders' 		=> 65536,	// Shareholders of the corporation.
+		'CorporationOutpostServiceDetail' 	=> 32768,	// List of all service settings of corporate outposts.
+		'CorporationOutpostList' 		=> 16384,	// List of all outposts controlled by the corporation.
+		'CorporationMedals' 			=> 8192,	// List of all medals created by the corporation.
+		'CorporationMarketOrders' 		=> 4096,	// List of all corporate market orders.
+		'CorporationMemberTrackingLimited' 	=> 2048,	// Limited Member information.
+		'CorporationMemberSecurityLog' 		=> 1024,	// Member role and title change log.
+		'CorporationMemberSecurity' 		=> 512,		// Member roles and titles.
+		'CorporationKillLog' 			=> 256,		// Corporation kill log.
+		'CorporationIndustryJobs' 		=> 128,		// Corporation jobs, completed and active.
+		'CorporationFacWarStats' 		=> 64,		// Corporations Factional Warfare Statistics.
+		'CorporationContainerLog' 		=> 32,		// Corporate secure container acess log.
+		'CorporationContactList' 		=> 16,		// Corporate contact list and relationships.
+		'CorporationCorporationSheet' 		=> 8,		/* Exposes basicShow Infoinformation as well as Member Limit and basic division and 
+									 * wallet info.
+									 */
+		'CorporationMemberMedals' 		=> 4,		// List of medals awarded to corporation members.
+		'CorporationAssetList' 			=> 2,		// List of all corporation assets.
+		'CorporationAccountBalance' 		=> 1,		// Current balance of all corporation accounts.		
+	);
+
 
 	private function _request($host, $csv = false) {
 		$full_path = $host . '?keyID=' . $this->keyID . '&vCode=' . $this->vCode . '&characterId=' . $this->characterID;
-debug($full_path);
 		$date = date('D, d M Y G:i:s T',time());
  		$header = array("Host: api.eveonline.com", "Date: ". $date);
 
@@ -159,6 +230,20 @@ debug($full_path);
 		$this->characterID = $characterID;
 		$this->keyID = $keyID;
 		$this->vCode = $vCode;
+	}
+
+	public function validateAccessMask($accessMask, $names = array()) {
+		if(is_array($names)) {
+			foreach($names as $name) {
+				if(!($accessMask & $this->accessMasks[$name])) {
+					return false;
+					break;
+				}
+			}
+			return true;
+		}else {
+			throw new InternalErrorException();
+		}
 	}
 	
 	/*
