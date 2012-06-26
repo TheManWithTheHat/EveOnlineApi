@@ -33,6 +33,15 @@ class TestsController extends EveOnlineApiAppController {
 	var $uses = null;
 
 	public function test() {
+		//Demo Limited API Key from Mara Alba
+		$this->EveOnlineApi->init(1071702, 'UwNvjipU9uFEElSSgOOiXQM7aQX9XIm8SKj36NUs7gKvciu6mjcSvWYuUJJ97n5k', 92146869);
+		$result = $this->EveOnlineApi->getAccountStatus();
+		if($result) {
+			debug($this->EveOnlineApi->response);
+		} else {
+			debug($this->EveOnlineApi->errormessage);
+		}
+
 	}
 
 }
