@@ -37,7 +37,6 @@ class TestsController extends EveOnlineApiAppController {
 		$this->EveOnlineApi->init(1071702, 'UwNvjipU9uFEElSSgOOiXQM7aQX9XIm8SKj36NUs7gKvciu6mjcSvWYuUJJ97n5k', 92146869);
 
 		$accessMask = $this->EveOnlineApi->validateAccessMask(8921408, array('CharacterInfo'));
-		debug($accessMask);
 
 		$result = $this->EveOnlineApi->getCharacterInfo();
 		if($result) {
@@ -45,6 +44,17 @@ class TestsController extends EveOnlineApiAppController {
 		} else {
 			debug($this->EveOnlineApi->errormessage);
 		}
+
+		$result2 = $this->EveCentralApi->marketstat(array(
+			'typeid' => array(34,35),
+			'reionlimit' =>10000002 
+		));
+		if($result2) {
+			debug($this->EveCentralApi->response);
+		} else {
+			debug($this->EveCentralApi->errormessage);
+		}
+
 
 	}
 

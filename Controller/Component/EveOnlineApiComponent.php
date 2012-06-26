@@ -172,7 +172,7 @@ class EveOnlineApiComponent extends Component {
 	private function _request($host, $csv = false) {
 		$full_path = $host . '?keyID=' . $this->keyID . '&vCode=' . $this->vCode . '&characterId=' . $this->characterID;
 		$date = date('D, d M Y G:i:s T',time());
- 		$header = array("Host: api.eveonline.com", "Date: ". $date);
+ 		$header = array("Host: api.eveonline.com", "Date: ". $date, "User-Agent: EveOnlineApi Plugin for cakePHP");
 
 		$fails = 0; 		
  		while($fails < 5 || !empty($response)) {
