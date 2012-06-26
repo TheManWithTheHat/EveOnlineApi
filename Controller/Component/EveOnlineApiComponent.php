@@ -28,7 +28,8 @@ class EveOnlineApiComponent extends Component {
 	public $keyID = 1071702;
 	public $vCode = 'UwNvjipU9uFEElSSgOOiXQM7aQX9XIm8SKj36NUs7gKvciu6mjcSvWYuUJJ97n5k';
 
-	public $urls = array(	'AccountStatus' => 'https://api.eveonline.com/account/AccountStatus.xml.aspx',
+	public $urls = array(	'APIKeyInfo' => 'https://api.eveonline.com/account/APIKeyInfo.xml.aspx',
+				'AccountStatus' => 'https://api.eveonline.com/account/AccountStatus.xml.aspx',
 				'AccountCharacters' => 'https://api.eveonline.com/account/Characters.xml.aspx',
 				'CharacterAccountBalance' => 'https://api.eveonline.com/char/AccountBalance.xml.aspx',
 				'CharacterAssetList' => 'https://api.eveonline.com/char/AssetList.xml.aspx',
@@ -172,7 +173,7 @@ class EveOnlineApiComponent extends Component {
 	private function _request($host, $csv = false) {
 		$full_path = $host . '?keyID=' . $this->keyID . '&vCode=' . $this->vCode . '&characterId=' . $this->characterID;
 		$date = date('D, d M Y G:i:s T',time());
- 		$header = array("Host: api.eveonline.com", "Date: ". $date, "User-Agent: EveOnlineApi Plugin for cakePHP");
+ 		$header = array("Host: api.eveonline.com", "Date: ". $date);
 
 		$fails = 0; 		
  		while($fails < 5 || !empty($response)) {
@@ -244,6 +245,10 @@ class EveOnlineApiComponent extends Component {
 		}else {
 			throw new InternalErrorException();
 		}
+	}
+
+	public function getAPIKeyInfo() {
+		return $this->_request($this->urls['APIKeyInfo']);
 	}
 	
 	/*
