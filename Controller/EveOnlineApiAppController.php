@@ -24,6 +24,12 @@
 
 class EveOnlineApiAppController extends AppController {
 
+	public $components = array(
+			'EveOnlineApi.EveOnlineApi',
+			'EveOnlineApi.EveCentralApi'
+	);
+
+
 	public function beforeFilter() {
 		parent::beforeFilter();
 
