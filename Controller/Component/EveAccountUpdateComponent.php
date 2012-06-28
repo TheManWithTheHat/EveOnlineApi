@@ -31,9 +31,41 @@ class EveAccountUpdateComponent extends Component {
 	var $accessMask = null;
 	var $suberror = array();		// Saving error messages from sub requests without canceling the update process
 
-	var $tmpChar = array();
-	var $tmpWallet = array();
-	
+	var $tmpCharData = array();
+
+	var $empty_wallet = array(
+			'transactionID' => null,
+			'date' => null,
+			'refTypeID' => null,
+			'transactionType' => null,
+			'typeName' => null,
+			'typeID'  => null,
+			'stationID' => null,
+			'stationName' => null,
+			'sender_characterID' => null,
+			'sender_characterName' => null,
+			'receiver_characterID' => null,
+			'receiver_characterName' => null,
+			'argID' => null,
+			'argName' => null,
+			'reason' => null,
+			'balance' => null,
+			'amount' => null,
+			'taxReceiverID' => null,
+			'taxAmount' => null,
+			'buying_quantity' => null,
+			'buying_price' => null,
+			'buying_totalprice' => null,
+			'buying_totalfee' => null,
+			'selling_quantity' => null,
+			'selling_price' => null,
+			'selling_totalprice' => null,
+			'selling_totalfee' => null,
+			'leftover' => null,
+			'relTransactionIDs' => null
+	);
+
+
 	function initialize(&$controller) {
 
 	}
@@ -43,19 +75,21 @@ class EveAccountUpdateComponent extends Component {
 		$result = $this->EveOnlineApi->getAPIKeyInfo();
 		if($result) {
 			$this->accessMask = $this->EveOnlineApi->response['result']['key']['@accessMask'];
-			$this->returndata['accessMask'] = intval($this->EveOnlineApi->response['result']['key']['@accessMask']);
-			$this->returndata['type'] = $this->EveOnlineApi->response['result']['key']['@type'];
-			$this->returndata['expires'] = $this->EveOnlineApi->response['result']['key']['@expires'];
-			$this->returndata['lastvisit'] = time();
+			$this->returndata['Account']['keyID'] = $keyID;
+			$this->returndata['Account']['vCode'] = $vCode;
+			$this->returndata['Account']['accessMask'] = intval($this->EveOnlineApi->response['result']['key']['@accessMask']);
+			$this->returndata['Account']['type'] = $this->EveOnlineApi->response['result']['key']['@type'];
+			$this->returndata['Account']['expires'] = $this->EveOnlineApi->response['result']['key']['@expires'];
+			$this->returndata['Account']['lastvisit'] = time();
 			$characters = $this->EveOnlineApi->response['result']['key']['rowset']['row'];
 			// Retrieve detailed Account Data
 			$result = $this->EveOnlineApi->getAccountStatus();
 			if($result) {
-				$this->returndata['days_played'] = (time() - strtotime($this->EveOnlineApi->response['result']['createDate']))/60/60/24;
-				$this->returndata['paidUntil'] = $this->EveOnlineApi->response['result']['paidUntil'];
-				$this->returndata['createDate'] = $this->EveOnlineApi->response['result']['createDate'];
-				$this->returndata['logonCount'] = intval($this->EveOnlineApi->response['result']['logonCount']);
-				$this->returndata['logonMinutes'] = intval($this->EveOnlineApi->response['result']['logonMinutes']);
+				$this->returndata['Account']['days_played'] = (time() - strtotime($this->EveOnlineApi->response['result']['createDate']))/60/60/24;
+				$this->returndata['Account']['paidUntil'] = $this->EveOnlineApi->response['result']['paidUntil'];
+				$this->returndata['Account']['createDate'] = $this->EveOnlineApi->response['result']['createDate'];
+				$this->returndata['Account']['logonCount'] = intval($this->EveOnlineApi->response['result']['logonCount']);
+				$this->returndata['Account']['logonMinutes'] = intval($this->EveOnlineApi->response['result']['logonMinutes']);
 			} else {
 				//Error Handling
 				$this->returnerror = $this->EveOnlineApi->error;
@@ -64,96 +98,99 @@ class EveAccountUpdateComponent extends Component {
 				foreach($characters as $character) {
 					$this->EveOnlineApi->characterID = $character['@characterID'];
 					$this->EveOnlineApi->characterName = $character['@characterName'];
-					$this->tmpCharData = array();
-					$this->tmpCharData['characterID'] = intval($character['@characterID']);
-					$this->tmpCharData['characterName'] = $character['@characterName'];
-					$this->tmpCharData['corporationID'] = intval($character['@corporationID']);
-					$this->tmpCharData['corporationName'] = $character['@corporationName'];
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterInfo'))) {
-						$this->handleSheet($options);
-					}
-						
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterContactList'))) {
-						$this->handleContactList();
-					}
+					$this->tmpCharData = array(	'Character' => array(),
+							'Skill' => array(),
+							'Certificate' => array(),
+							'Wallet' => array()
+					);
+					$this->tmpCharData['Character']['characterID'] = intval($character['@characterID']);
+					$this->tmpCharData['Character']['characterName'] = $character['@characterName'];
+					$this->tmpCharData['Character']['corporationID'] = intval($character['@corporationID']);
+					$this->tmpCharData['Character']['corporationName'] = $character['@corporationName'];
 
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterContactNotifications'))) {
-						$this->handleContactNotifications();
+					if(!$options['disabledCharacterImport']) {
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterInfo'))) {
+							$this->handleSheet($options);
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterContactList'))) {
+							$this->handleContactList();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterContactNotifications'))) {
+							$this->handleContactNotifications();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterFacWarStats'))) {
+							$this->handleFacWarStats();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterIndustryJobs'))) {
+							$this->handleIndustryJobs();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterKillLog'))) {
+							$this->handleKillLog();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMailingLists'))) {
+							$this->handleMailinglists();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMailBodies'))) {
+							$this->handleMailBodies();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMailMessages'))) {
+							$this->handleMailMessages();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMarketOrders'))) {
+							$this->handleMarketOrders();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMedals'))) {
+							$this->handleMedals();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterNotificationTexts'))) {
+							$this->handleNotificationTexts();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterNotifications'))) {
+							$this->handleNotifications();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterStandings'))) {
+							$this->handleStandings();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterResearch'))) {
+							$this->handleResearch();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterSkillInTraining'))) {
+							$this->handleSkillInTraining();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterSkillQueue'))) {
+							$this->handleSkillQueue();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterUpcomingCalendarEvents'))) {
+							$this->handleUpcomingCalendarEvents();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletJournal'))) {
+							$this->handleWalletJournal();
+						}
+	
+						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletTransactions'))) {
+							$this->handleWalletTransactions($options);
+						}
 					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterFacWarStats'))) {
-						$this->handleFacWarStats();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterIndustryJobs'))) {
-						$this->handleIndustryJobs();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterKillLog'))) {
-						$this->handleKillLog();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMailingLists'))) {
-						$this->handleMailinglists();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMailBodies'))) {
-						$this->handleMailBodies();
-					}
-						
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMailMessages'))) {
-						$this->handleMailMessages();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMarketOrders'))) {
-						$this->handleMarketOrders();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterMedals'))) {
-						$this->handleMedals();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterNotificationTexts'))) {
-						$this->handleNotificationTexts();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterNotifications'))) {
-						$this->handleNotifications();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterStandings'))) {
-						$this->handleStandings();
-					}
-						
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterResearch'))) {
-						$this->handleResearch();
-					}
-
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterSkillInTraining'))) {
-						$this->handleSkillInTraining();
-					}
-						
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterSkillQueue'))) {
-						$this->handleSkillQueue();
-					}
-						
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterUpcomingCalendarEvents'))) {
-						$this->handleUpcomingCalendarEvents();
-					}
-
-					$this->tmpWallet = array();
-					
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletJournal'))) {
-						$this->handleWalletJournal();
-					}
-						
-					if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletTransactions'))) {
-						$this->handleWalletTransactions();
-					}
-					$this->tmpCharData['Wallet'] = $this->tmpWallet;
-					
 					// Returning Character Data
-					$this->returndata['Character'][] = $this->tmpCharData;
+					$this->returndata['chars'][] = $this->tmpCharData;
 				}
 			}
 		} else {
@@ -183,7 +220,7 @@ class EveAccountUpdateComponent extends Component {
 		//TODO
 		$result = true;
 		if($result) {
-				
+
 		} else {
 			//Error Handling
 			$this->suberror['CharacterAssetList'] = $this->EveOnlineApi->error;
@@ -194,7 +231,7 @@ class EveAccountUpdateComponent extends Component {
 		//TODO
 		$result = true;
 		if($result) {
-				
+
 		} else {
 			//Error Handling
 			$this->suberror['CharacterCalendarEventAttendees'] = $this->EveOnlineApi->error;
@@ -204,26 +241,26 @@ class EveAccountUpdateComponent extends Component {
 	private function handleSheet($options) {
 		$result = $this->EveOnlineApi->getCharacterSheet();
 		if($result) {
-			$this->tmpCharData['skills'] = 0;
-			$this->tmpCharData['skillpoints'] = 0;
-			$this->tmpCharData['lvl0skills'] = 0;
-			$this->tmpCharData['lvl1skills'] = 0;
-			$this->tmpCharData['lvl2skills'] = 0;
-			$this->tmpCharData['lvl3skills'] = 0;
-			$this->tmpCharData['lvl4skills'] = 0;
-			$this->tmpCharData['lvl5skills'] = 0;
-			$this->tmpCharData['certificates'] = 0;
+			$this->tmpCharData['Character']['skills'] = 0;
+			$this->tmpCharData['Character']['skillpoints'] = 0;
+			$this->tmpCharData['Character']['lvl0skills'] = 0;
+			$this->tmpCharData['Character']['lvl1skills'] = 0;
+			$this->tmpCharData['Character']['lvl2skills'] = 0;
+			$this->tmpCharData['Character']['lvl3skills'] = 0;
+			$this->tmpCharData['Character']['lvl4skills'] = 0;
+			$this->tmpCharData['Character']['lvl5skills'] = 0;
+			$this->tmpCharData['Character']['certificates'] = 0;
 			foreach($this->EveOnlineApi->response['result'] as $key => $value) {
 				if(!is_array($value)) {
-					$this->tmpCharData[$key] = $value;
+					$this->tmpCharData['Character'][$key] = $value;
 				} else {
 					if($key == 'attributes') {
 						foreach($value as $attribute => $a) {
-							$this->tmpCharData[$attribute] = intval($a);
+							$this->tmpCharData['Character'][$attribute] = intval($a);
 						}
 					} else if($key == 'attributeEnhancers') {
 						foreach($value as $attribute => $a) {
-							$this->tmpCharData[str_replace('Bonus', '', $attribute).'AugmentatorValue'] = intval($a['augmentatorValue']);
+							$this->tmpCharData['Character'][str_replace('Bonus', '', $attribute).'AugmentatorValue'] = intval($a['augmentatorValue']);
 						}
 					} else if($key == 'rowset') {
 						foreach($value as $rowset) {
@@ -231,8 +268,8 @@ class EveAccountUpdateComponent extends Component {
 								foreach($rowset['row'] as $row) {
 									if($rowset['@name'] == 'skills') {
 										if(!empty($options['skillsInSameTable'])) {
-											$this->tmpCharData['skill' . $row['@typeID'] . 'level'] = intval($row['@level']);
-											$this->tmpCharData['skill' . $row['@typeID'] . 'points'] = intval($row['@skillpoints']);
+											$this->tmpCharData['Character']['skill' . $row['@typeID'] . 'level'] = intval($row['@level']);
+											$this->tmpCharData['Character']['skill' . $row['@typeID'] . 'points'] = intval($row['@skillpoints']);
 										} else {
 											$this->tmpCharData['Skill'][] = array(
 													'characterID' => $this->EveOnlineApi->characterID,
@@ -242,15 +279,15 @@ class EveAccountUpdateComponent extends Component {
 													'published' => intval($row['@published'])
 											);
 										}
-										$this->tmpCharData['lvl'.$row['@level'].'skills']++;
-										$this->tmpCharData['skills']++;
-										$this->tmpCharData['skillpoints'] += $row['@skillpoints'];
+										$this->tmpCharData['Character']['lvl'.$row['@level'].'skills']++;
+										$this->tmpCharData['Character']['skills']++;
+										$this->tmpCharData['Character']['skillpoints'] += $row['@skillpoints'];
 									} else if($rowset['@name'] == 'certificates') {
 										$this->tmpCharData['Certificate'][] = array(
 												'characterID' => $this->EveOnlineApi->characterID,
 												'certificateID' => intval($row['@certificateID'])
 										);
-										$this->tmpCharData['certificates']++;
+										$this->tmpCharData['Character']['certificates']++;
 									}
 								}
 							}
@@ -461,27 +498,28 @@ class EveAccountUpdateComponent extends Component {
 						$walking = false;
 					}
 					$entries_found++;
-				
-					
+
 					if ($transaction['@refID'] > $last_transaction || !$last_transaction) {
 						if(!empty($transaction['@refTypeID']) && (0 < floatval($transaction['@amount']) || floatval($transaction['@amount']) < 0)) {
-							$this->tmpWallet[$transaction['@refID']] = array(
-									'date' => $transaction['@date'],
-									'refTypeID' => intval($transaction['@refTypeID']),
-									'sender_characterID' => intval($transaction['@ownerID1']),
-									'sender_characterName' => $transaction['@ownerName1'],
-									'receiver_characterID' => intval($transaction['@ownerID2']),
-									'receiver_characterName' => $transaction['@ownerName2'],
-									'argID' => isset($transaction['@argID']) ? intval($transaction['@argID']) : null,
-									'argName' => isset($transaction['@argName']) ? $transaction['@argName'] : null,
-									'reason' => $transaction['@reason'],
-									'amount' => floatval($transaction['@amount']),
-									'taxReceiverID' => isset($transaction['taxReceiverID']) ? intval($transaction['taxReceiverID']) : null,
-									'taxAmount' => isset($transaction['@taxAmount']) ? $transaction['@taxAmount'] : null 
-							);								
+							$this->tmpCharData['Wallet'][$transaction['@refID']] = $this->empty_wallet;
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['characterID'] = $this->EveOnlineApi->characterID;
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['transactionID'] = intval($transaction['@refID']);
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['date'] = $transaction['@date'];
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['refTypeID'] = intval($transaction['@refTypeID']);
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['sender_characterID'] = intval($transaction['@ownerID1']);
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['sender_characterName'] = (string) $transaction['@ownerName1'];
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['receiver_characterID'] = intval($transaction['@ownerID2']);
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['receiver_characterName'] = (string) $transaction['@ownerName2'];
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['argID'] = isset($transaction['@argID']) ? intval($transaction['@argID']) : null;
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['argName'] = isset($transaction['@argName']) ? $transaction['@argName'] : null;
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['reason'] = (string) $transaction['@reason'];
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['balance'] = floatval($transaction['@balance']);
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['amount'] = floatval($transaction['@amount']);
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['taxReceiverID'] = isset($transaction['taxReceiverID']) ? intval($transaction['taxReceiverID']) : null;
+							$this->tmpCharData['Wallet'][$transaction['@refID']]['taxAmount'] = isset($transaction['@taxAmount']) ? floatval($transaction['@taxAmount']) : null;
 						}
 					}
-					$this->tmpCharData['last_walletjournal'] = $nextlast_transaction;
+					$this->tmpCharData['Character']['last_walletjournal'] = $nextlast_transaction;
 				}
 				if($entries_found >= $limit) {
 					$walking = false;
@@ -496,7 +534,7 @@ class EveAccountUpdateComponent extends Component {
 		}
 	}
 
-	private function handleWalletTransactions($last_transaction = null) {
+	private function handleWalletTransactions($options, $last_transaction = null) {
 		$params = array('rowCount' => 250);
 		$walking = true;
 		$transactions_to_process = array();
@@ -512,7 +550,7 @@ class EveAccountUpdateComponent extends Component {
 				foreach ($this->EveOnlineApi->response['result']['rowset']['row'] as $transaction){
 					//Stop walking?
 					$walking = false;
-				
+
 					if ($transaction['@transactionID'] > $last_transaction) {
 						$transactions_to_process[] = $transaction;
 						if (!isset($params['fromID']) || (isset($params['fromID']) && $params['fromID'] > $transaction['@transactionID'])){
@@ -527,37 +565,139 @@ class EveAccountUpdateComponent extends Component {
 				}
 				$this->tmpCharData['last_transaction'] = intval($nextlast_transaction);
 			} else {
-			//Error Handling
-			$this->suberror['CharacterWalletTransactions'] = $this->EveOnlineApi->error;
+				//Error Handling
+				$this->suberror['CharacterWalletTransactions'] = $this->EveOnlineApi->error;
 			}
-		}	
+		}
 		// Combining WalletTransactions and WalletJournal
 		if(!empty($transactions_to_process)) {
 			foreach($transactions_to_process as $transaction) {
 				if(floatval($transaction['@price']) < 0 || floatval($transaction['@price']) > 0) {
-					$this->tmpWallet[$transaction['@journalTransactionID']]['date'] = $transaction['@transactionDateTime'];
-					$this->tmpWallet[$transaction['@journalTransactionID']]['transactionType'] = $transaction['@transactionType'];
-					if($transaction['@transactionType'] == 'buy') {
-						$this->tmpWallet[$transaction['@journalTransactionID']]['sender_characterID'] = $transaction['@clientName'];
-						$this->tmpWallet[$transaction['@journalTransactionID']]['sender_characterName'] = intval($transaction['@clientID']);
-						$this->tmpWallet[$transaction['@journalTransactionID']]['receiver_characterID'] = $this->EveOnlineApi->characterID;
-						$this->tmpWallet[$transaction['@journalTransactionID']]['receiver_characterName'] = $this->EveOnlineApi->characterName;
-					} else {
-						$this->tmpWallet[$transaction['@journalTransactionID']]['sender_characterID'] = $this->EveOnlineApi->characterID;
-						$this->tmpWallet[$transaction['@journalTransactionID']]['sender_characterID'] = $this->EveOnlineApi->characterName;
-						$this->tmpWallet[$transaction['@journalTransactionID']]['receiver_characterID'] = intval($transaction['@clientID']);
-						$this->tmpWallet[$transaction['@journalTransactionID']]['receiver_characterName'] = $transaction['@clientName'];
+					if(empty($this->tmpCharData['Wallet'][$transaction['@journalTransactionID']])) {
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']] = $this->empty_wallet;
 					}
-					$this->tmpWallet[$transaction['@journalTransactionID']]['typeName'] = $transaction['@typeName'];
-					$this->tmpWallet[$transaction['@journalTransactionID']]['typeID'] = intval($transaction['@typeID']);
-					$this->tmpWallet[$transaction['@journalTransactionID']]['stationID'] = intval($transaction['@stationID']);
-					$this->tmpWallet[$transaction['@journalTransactionID']]['stationName'] = $transaction['@stationName'];
-					$this->tmpWallet[$transaction['@journalTransactionID']]['quantity'] = intval($transaction['@quantity']);
-					$this->tmpWallet[$transaction['@journalTransactionID']]['price'] = floatval($transaction['@price']);
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['characterID']= $this->EveOnlineApi->characterID;
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['transactionID'] = intval($transaction['@journalTransactionID']);
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['date'] = $transaction['@transactionDateTime'];
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['transactionType'] = $transaction['@transactionType'];
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['typeName'] = $transaction['@typeName'];
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['typeID'] = intval($transaction['@typeID']);
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['stationID'] = intval($transaction['@stationID']);
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['stationName'] = $transaction['@stationName'];
+					if($transaction['@transactionType'] == 'buy') {
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['sender_characterID'] = $transaction['@clientName'];
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['sender_characterName'] = intval($transaction['@clientID']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['receiver_characterID'] = $this->EveOnlineApi->characterID;
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['receiver_characterName'] = $this->EveOnlineApi->characterName;
+
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['buying_quantity'] = intval($transaction['@quantity']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['buying_price'] = floatval($transaction['@price']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['buying_totalprice'] = floatval($transaction['@price']) * intval($transaction['@quantity']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['buying_totalfee'] = floatval(0);
+					} else {
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['sender_characterID'] = $this->EveOnlineApi->characterID;
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['sender_characterID'] = $this->EveOnlineApi->characterName;
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['receiver_characterID'] = intval($transaction['@clientID']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['receiver_characterName'] = $transaction['@clientName'];
+
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['selling_quantity'] = intval($transaction['@quantity']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['selling_price'] = floatval($transaction['@price']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['selling_totalprice'] = floatval($transaction['@price']) * intval($transaction['@quantity']);
+						$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['selling_totalfee'] = floatval(0);
+					}
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['leftover'] = intval($transaction['@quantity']);
+					$this->tmpCharData['Wallet'][$transaction['@journalTransactionID']]['relTransactionIDs'] = array();
 				}
 			}
-		}	
-		//debug($this->tmpWallet);
+		}
+		if(!empty($options['combineTransactions'])) {
+			// Combining matching Sell and Buyorders together
+			$this->tmpCharData['Wallet'] =  $this->combineTransactions($this->tmpCharData['Wallet']);
+		}
+	}
+
+	private function combineTransactions($wallet) {
+		// Combining Selling Orders with Buying Orders
+		$allsellorders = Set::extract('/Transaction[transactionType=/sell/i][leftover>0]', array('Transaction' => $wallet));
+		if(!empty($allsellorders)) {
+			foreach($allsellorders as $sellorder) {
+				$buyorders = Set::extract('/Transaction[transactionType=/buy/i][typeID='.$sellorder['Transaction']['typeID'].'][leftover>0]', array('Transaction' => $wallet));
+				if(!empty($buyorders)) {
+					$leftover = $sellorder['Transaction']['leftover'];
+					foreach($buyorders as $buyorder) {
+						if($leftover > 0) {
+							$quantity = 0;
+							if($leftover >= $buyorder['Transaction']['leftover']) {
+								$quantity = $buyorder['Transaction']['leftover'];
+							} else if($leftover < $buyorder['Transaction']['leftover']) {
+								$quantity = $leftover;
+							}
+							if($quantity > 0) {
+								// Modifing SellOrder
+								$wallet[$sellorder['Transaction']['transactionID']]['leftover'] -= $quantity;
+								$wallet[$sellorder['Transaction']['transactionID']]['buying_quantity'] += $quantity;
+								$wallet[$sellorder['Transaction']['transactionID']]['buying_totalprice'] +=  $buyorder['Transaction']['buying_totalprice'];
+								$wallet[$sellorder['Transaction']['transactionID']]['buying_price'] = $wallet[$sellorder['Transaction']['transactionID']]['buying_totalprice'] / $quantity;
+								$wallet[$sellorder['Transaction']['transactionID']]['relTransactionIDs'][] = $buyorder['Transaction']['transactionID'];
+								// Modifing BuyOrder
+								$wallet[$buyorder['Transaction']['transactionID']]['leftover'] -= $quantity;
+								$wallet[$buyorder['Transaction']['transactionID']]['selling_quantity'] += $quantity;
+								$wallet[$buyorder['Transaction']['transactionID']]['selling_totalprice'] +=  $sellorder['Transaction']['selling_totalprice'];
+								$wallet[$buyorder['Transaction']['transactionID']]['selling_price'] = $wallet[$buyorder['Transaction']['transactionID']]['selling_totalprice'] / $quantity;
+								$wallet[$buyorder['Transaction']['transactionID']]['relTransactionIDs'][] = $sellorder['Transaction']['transactionID'];
+							}
+						}
+					}
+				}
+				//Fees
+				$feeorders = Set::extract('/Transaction[date=/'.$sellorder['Transaction']['date'].'/i][refTypeID=54][leftover>0]', array('Transaction' => $wallet));
+				if(!empty($feeorders)) {
+					foreach($feeorders as $feeorder) {
+						$wallet[$sellorder['Transaction']['transactionID']]['selling_totalfee'] += $feeorder['Transaction']['amount'];
+						$wallet[$sellorder['Transaction']['transactionID']]['relTransactionIDs'][] = $feeorder['Transaction']['transactionID'];
+
+						$wallet[$feeorder['Transaction']['transactionID']]['leftover'] = 0;
+						$wallet[$feeorder['Transaction']['transactionID']]['relTransactionIDs'][] = $sellorder['Transaction']['transactionID'];
+					}
+				}
+			}
+		}
+		// Combining Buying Orders with Selling Orders
+		$allbuyorders = Set::extract('/Transaction[transactionType=/buy/i][leftover>0]', array('Transaction' => $wallet));
+		if(!empty($allbuyorders)) {
+			foreach($allbuyorders as $buyorder) {
+				$sellorders = Set::extract('/Transaction[transactionType=/sell/i][typeID='.$buyorder['Transaction']['typeID'].'][leftover>0]', array('Transaction' => $wallet));
+				if(!empty($sellorders)) {
+					$leftover = $buyorder['Transaction']['leftover'];
+					foreach($sellorders as $sellorder) {
+						if($leftover > 0) {
+							$quantity = 0;
+							if($leftover >= $sellorder['Transaction']['leftover']) {
+								$quantity = $sellorder['Transaction']['leftover'];
+							} else if($leftover < $sellorder['Transaction']['leftover']) {
+								$quantity = $leftover;
+							}
+							if($quantity > 0) {
+								// Modifing SellOrder
+								$wallet[$sellorder['Transaction']['transactionID']]['leftover'] -= $quantity;
+								$wallet[$sellorder['Transaction']['transactionID']]['buying_quantity'] += $quantity;
+								$wallet[$sellorder['Transaction']['transactionID']]['buying_totalprice'] +=  $buyorder['Transaction']['buying_totalprice'];
+								$wallet[$sellorder['Transaction']['transactionID']]['buying_price'] = $wallet[$sellorder['Transaction']['transactionID']]['buying_totalprice'] / $quantity;
+								$wallet[$sellorder['Transaction']['transactionID']]['relTransactionIDs'][] = $buyorder['Transaction']['transactionID'];
+								// Modifing BuyOrder
+								$wallet[$buyorder['Transaction']['transactionID']]['leftover'] -= $quantity;
+								$wallet[$buyorder['Transaction']['transactionID']]['selling_quantity'] += $quantity;
+								$wallet[$buyorder['Transaction']['transactionID']]['selling_totalprice'] +=  $sellorder['Transaction']['selling_totalprice'];
+								$wallet[$buyorder['Transaction']['transactionID']]['selling_price'] = $wallet[$buyorder['Transaction']['transactionID']]['selling_totalprice'] / $quantity;
+
+								$wallet[$buyorder['Transaction']['transactionID']]['relTransactionIDs'][] = $sellorder['Transaction']['transactionID'];
+							}
+						}
+					}
+				}
+			}
+		}
+		return $wallet;
 	}
 
 	private function handleUpcomingCalendarEvents() {
