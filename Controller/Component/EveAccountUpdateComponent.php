@@ -107,12 +107,10 @@ class EveAccountUpdateComponent extends Component {
 					$this->tmpCharData['Character']['characterName'] = $character['@characterName'];
 					$this->tmpCharData['Character']['corporationID'] = intval($character['@corporationID']);
 					$this->tmpCharData['Character']['corporationName'] = $character['@corporationName'];
-
 					if(!$options['disabledCharacterImport']) {
 						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterInfo'))) {
 							$this->handleSheet($options);
 						}
-	
 						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterContactList'))) {
 							$this->handleContactList();
 						}
@@ -188,6 +186,7 @@ class EveAccountUpdateComponent extends Component {
 						if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletTransactions'))) {
 							$this->handleWalletTransactions($options);
 						}
+						$this->tmpCharData['Character']['lastApiUpdate'] = date('Y-m-d H:i:s', time());
 					}
 					// Returning Character Data
 					$this->returndata['chars'][] = $this->tmpCharData;
@@ -250,6 +249,7 @@ class EveAccountUpdateComponent extends Component {
 			$this->tmpCharData['Character']['lvl4skills'] = 0;
 			$this->tmpCharData['Character']['lvl5skills'] = 0;
 			$this->tmpCharData['Character']['certificates'] = 0;
+			$this->tmpCharData['Character']['cachedUntil'] = $this->EveOnlineApi->response['cachedUntil'];
 			foreach($this->EveOnlineApi->response['result'] as $key => $value) {
 				if(!is_array($value)) {
 					$this->tmpCharData['Character'][$key] = $value;
@@ -497,6 +497,9 @@ class EveAccountUpdateComponent extends Component {
 					if($last_transaction > $transaction['@refID']) {
 						$walking = false;
 					}
+					if($transaction['@refID'] > $nextlast_transaction) {
+						$nextlast_transaction = $transaction['@refID']; 
+					}
 					$entries_found++;
 
 					if ($transaction['@refID'] > $last_transaction || !$last_transaction) {
@@ -639,6 +642,7 @@ class EveAccountUpdateComponent extends Component {
 								$wallet[$sellorder['Transaction']['transactionID']]['buying_totalprice'] +=  $buyorder['Transaction']['buying_totalprice'];
 								$wallet[$sellorder['Transaction']['transactionID']]['buying_price'] = $wallet[$sellorder['Transaction']['transactionID']]['buying_totalprice'] / $quantity;
 								$wallet[$sellorder['Transaction']['transactionID']]['relTransactionIDs'][] = $buyorder['Transaction']['transactionID'];
+
 								// Modifing BuyOrder
 								$wallet[$buyorder['Transaction']['transactionID']]['leftover'] -= $quantity;
 								$wallet[$buyorder['Transaction']['transactionID']]['selling_quantity'] += $quantity;
