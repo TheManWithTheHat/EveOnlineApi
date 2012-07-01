@@ -43,6 +43,8 @@ class EveAccountUpdateComponent extends Component {
 		if(!empty($account_id)) {
 			$this->Account->id = $account_id;
 			$this->Account->data = $this->Account->read();
+		} else {
+			$this->Account->data['Account']['user_id'] = $user_id;
 		}
 		if(!empty($keyID)) {
 			$this->Account->data['Account']['keyID'] = $keyID;
@@ -75,6 +77,7 @@ class EveAccountUpdateComponent extends Component {
 				if(!empty($characters)) {
 					App::import('Model', 'EveOnlineApi.Character');
 					$this->Character = new Character();
+					$this->Character->newdata = array();
 					foreach($characters as $character) {
 						$this->Character->id = intval($character['@characterID']);
 						$this->Character->data = $this->Character->read();
