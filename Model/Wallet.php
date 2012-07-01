@@ -27,6 +27,23 @@ App::uses('AppModel', 'Model');
 class Wallet extends EveOnlineApiAppModel {
 	
 	public $primaryKey = 'transactionID';
+
+	public $defaultOrder = array('Wallet.created' => 'desc', 'Wallet.transactionID' => 'desc');
+
+	public $defaultJoins = array(
+		array(	'table' => 'characters',
+			'alias' => 'Character',
+			'type' => 'left',
+			'conditions' => array('Character.characterID = Wallet.characterID'
+			)
+		),
+		array(
+			'table' => 'accounts',
+			'alias' => 'Account',
+			'type' => 'left',
+			'conditions' => array('Account.id = Character.account_id')
+		)
+	);
 	
 }
 
