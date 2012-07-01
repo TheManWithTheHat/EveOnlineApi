@@ -272,6 +272,9 @@ class EveOnlineApiComponent extends Component {
 		if(!empty($params['fromID'])) {
 			$full_path .= '&fromID=' . $params['fromID']; 
 		}
+		if(!empty($params['rowCount'])) {
+			$full_path .= '&rowCount=' . $params['rowCount']; 
+		}
 		$date = date('D, d M Y G:i:s T',time());
 		$header = array("Host: api.eveonline.com", "Date: ". $date);
 
