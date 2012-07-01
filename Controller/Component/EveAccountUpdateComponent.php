@@ -37,20 +37,23 @@ class EveAccountUpdateComponent extends Component {
 
 	}
 
-	public function update($user_id, $account_id = null, $keyID, $vCode, $options = array()) {
-		$this->EveOnlineApi->init($keyID, $vCode);
+	public function update($user_id, $account_id = null, $keyID = null, $vCode = null, $options = array()) {
+		App::import('Model', 'EveOnlineApi.Account');
+		$this->Account = new Account();
+		if(!empty($account_id)) {
+			$this->Account->id = $account_id;
+			$this->Account->data = $this->Account->read();
+		}
+		if(!empty($keyID)) {
+			$this->Account->data['Account']['keyID'] = $keyID;
+		}
+		if(!empty($vCode)) {
+			$this->Account->data['Account']['vCode'] = $vCode;
+		}
+		$this->EveOnlineApi->init($this->Account->data['Account']['keyID'], $this->Account->data['Account']['vCode']);
 		$result = $this->EveOnlineApi->getAPIKeyInfo();
 		if($result) {
-			App::import('Model', 'EveOnlineApi.Account');
-			$this->Account = new Account();
 			$this->accessMask = $this->EveOnlineApi->response['result']['key']['@accessMask'];
-			$this->Account->data['Account']['user_id'] = $user_id;
-$account_id = 1;
-			if(!empty($account_id)) {
-				$this->Account->data['Account']['id'] = $account_id;
-			}
-			$this->Account->data['Account']['keyID'] = $keyID;
-			$this->Account->data['Account']['vCode'] = $vCode;
 			$this->Account->data['Account']['accessMask'] = intval($this->EveOnlineApi->response['result']['key']['@accessMask']);
 			$this->Account->data['Account']['type'] = $this->EveOnlineApi->response['result']['key']['@type'];
 			$this->Account->data['Account']['expires'] = $this->EveOnlineApi->response['result']['key']['@expires'];
@@ -73,6 +76,8 @@ $account_id = 1;
 					App::import('Model', 'EveOnlineApi.Character');
 					$this->Character = new Character();
 					foreach($characters as $character) {
+						$this->Character->id = intval($character['@characterID']);
+						$this->Character->data = $this->Character->read();
 						$this->EveOnlineApi->characterID = $character['@characterID'];
 						$this->EveOnlineApi->characterName = $character['@characterName'];
 						$this->tmpCharData['account_id'] = $this->Account->id;
@@ -80,7 +85,7 @@ $account_id = 1;
 						$this->tmpCharData['characterName'] = $character['@characterName'];
 						$this->tmpCharData['corporationID'] = intval($character['@corporationID']);
 						$this->tmpCharData['corporationName'] = $character['@corporationName'];
-						if(!$options['disabledCharacterImport']) {
+						if(empty($options['disabledCharacterImport']) || !$options['disabledCharacterImport']) {
 							if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterInfo'))) {
 								$this->handleSheet($options);
 							}
@@ -153,19 +158,19 @@ $account_id = 1;
 							}
 	
 							if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletJournal'))) {
-								$this->handleWalletJournal();
+								$this->handleWalletJournal(isset($this->Character->data['Character']['last_walletjournal']) ? $this->Character->data['Character']['last_walletjournal'] : null);
 							}
 	
 							if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletTransactions'))) {
-								$this->handleWalletTransactions($options);
+								$this->handleWalletTransactions(isset($this->Character->data['Character']['last_walletjournal']) ? $this->Character->data['Character']['last_walletjournal'] : null, $options);
 							}
 							$this->tmpCharData['lastApiUpdate'] = date('Y-m-d H:i:s', time());
 						}
 						// Returning Character Data
-						$this->Character->data['Character'][] = $this->tmpCharData;
+						$this->Character->newdata['Character'][] = $this->tmpCharData;
 					}
-					if(!empty($this->Character->data)) {
-						if(!$this->Character->saveMany($this->Character->data['Character'])) {
+					if(!empty($this->Character->newdata)) {
+						if(!$this->Character->saveMany($this->Character->newdata['Character'])) {
 							throw new InternalErrorException();
 						}
 					}
@@ -529,7 +534,7 @@ $account_id = 1;
 		}
 	}
 
-	private function handleWalletTransactions($options, $last_transaction = null) {
+	private function handleWalletTransactions($last_transaction = null, $options) {
 		$params = array('rowCount' => 250);
 		$walking = true;
 		$transactions_to_process = array();
@@ -548,7 +553,7 @@ $account_id = 1;
 					//Stop walking?
 					$walking = false;
 
-					if ($transaction['@transactionID'] > $last_transaction) {
+					if ($transaction['@journalTransactionID'] > $last_transaction) {
 						if($transaction['@transactionFor'] == 'personal'  && (floatval($transaction['@price']) < 0 || floatval($transaction['@price']) > 0)) {
 							$tmpWallet = array();
 							$tmpWallet['transactionID'] = intval($transaction['@journalTransactionID']);
