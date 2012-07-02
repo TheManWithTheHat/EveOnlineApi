@@ -60,20 +60,21 @@ class EveAccountUpdateComponent extends Component {
 			$this->Account->data['Account']['type'] = $this->EveOnlineApi->response['result']['key']['@type'];
 			$this->Account->data['Account']['expires'] = $this->EveOnlineApi->response['result']['key']['@expires'];
 			$this->Account->data['Account']['lastvisit'] = time();
+
+			$characters = $this->EveOnlineApi->response['result']['key']['rowset']['row'];
+			// Retrieve detailed Account Data
+			$result = $this->EveOnlineApi->getAccountStatus();
+			if($result) {
+				$this->Account->data['Account']['days_played'] = (time() - strtotime($this->EveOnlineApi->response['result']['createDate']))/60/60/24;
+				$this->Account->data['Account']['paidUntil'] = $this->EveOnlineApi->response['result']['paidUntil'];
+				$this->Account->data['Account']['createDate'] = $this->EveOnlineApi->response['result']['createDate'];
+				$this->Account->data['Account']['logonCount'] = intval($this->EveOnlineApi->response['result']['logonCount']);
+				$this->Account->data['Account']['logonMinutes'] = intval($this->EveOnlineApi->response['result']['logonMinutes']);
+			} else {
+				//Error Handling
+				$this->returnerror = $this->EveOnlineApi->error;
+			}
 			if($this->Account->save($this->Account->data)) {
-				$characters = $this->EveOnlineApi->response['result']['key']['rowset']['row'];
-				// Retrieve detailed Account Data
-				$result = $this->EveOnlineApi->getAccountStatus();
-				if($result) {
-					$this->Account->data['Account']['days_played'] = (time() - strtotime($this->EveOnlineApi->response['result']['createDate']))/60/60/24;
-					$this->Account->data['Account']['paidUntil'] = $this->EveOnlineApi->response['result']['paidUntil'];
-					$this->Account->data['Account']['createDate'] = $this->EveOnlineApi->response['result']['createDate'];
-					$this->Account->data['Account']['logonCount'] = intval($this->EveOnlineApi->response['result']['logonCount']);
-					$this->Account->data['Account']['logonMinutes'] = intval($this->EveOnlineApi->response['result']['logonMinutes']);
-				} else {
-					//Error Handling
-					$this->returnerror = $this->EveOnlineApi->error;
-				}
 				if(!empty($characters)) {
 					if(!isset($characters[0])) {
 						$characters = array(0 => $characters);
