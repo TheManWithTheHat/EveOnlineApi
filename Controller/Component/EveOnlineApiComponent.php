@@ -351,6 +351,50 @@ class EveOnlineApiComponent extends Component {
 		}
 	}
 
+	public function identifyTypeOfID($id) {
+		if($id >= 99000000 && $id <= 100000000) {
+			return "Alliance";
+		} else if($id >= 98000000 && $id < 99000000) {
+			return "Corporation"; 
+		} else if($id >= 90000000 && $id < 98000000) {
+			return "Character";
+		} else if($id >= 1000002 && $id <= 1000182) {
+			// NSC Corporation
+			return "NSC Corporation";
+		} else if($id >= 3008416 && $id <= 3019485) {
+			// NSC Agent
+			return "NSC Character";
+		} else if($id >= 500001 && $id <= 500020) {
+			// NSC Faction
+			return "NSC Faction";
+		} else {
+			//Sadly this only applies to owners created after the 64 bit move.
+			return "unknown";
+		}
+	}
+
+	public function getImageURL($id, $size = 64) {
+		if(!empty($id)) {
+			$type = $this->identifyTypeOfID($id);
+			switch($type) {
+				case 'Alliance' :
+					return 'http://image.eveonline.com/Alliance/' . $id . '_' . $size . '.jpg';
+					break;
+				case 'NSC Corporation' :
+				case 'Corporation' :
+					return 'http://image.eveonline.com/Corporation/' . $id . '_' . $size . '.png';
+					break;
+				case 'NSC Character' :
+				case 'Character' :
+				default:
+					return 'http://image.eveonline.com/Character/' . $id . '_' . $size . '.jpg';
+					break;
+			}
+		} else {
+			return false;
+		}
+	}
+
 	public function getAPIKeyInfo() {
 		return $this->_request($this->urls['APIKeyInfo']);
 	}
