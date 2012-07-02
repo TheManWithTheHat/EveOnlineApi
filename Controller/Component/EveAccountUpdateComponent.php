@@ -75,6 +75,9 @@ class EveAccountUpdateComponent extends Component {
 					$this->returnerror = $this->EveOnlineApi->error;
 				}
 				if(!empty($characters)) {
+					if(!isset($characters[0])) {
+						$characters = array(0 => $characters);
+					}
 					App::import('Model', 'EveOnlineApi.Character');
 					$this->Character = new Character();
 					$this->Character->newdata = array();
@@ -88,6 +91,7 @@ class EveAccountUpdateComponent extends Component {
 						$this->tmpCharData['characterName'] = $character['@characterName'];
 						$this->tmpCharData['corporationID'] = intval($character['@corporationID']);
 						$this->tmpCharData['corporationName'] = $character['@corporationName'];
+
 						if(empty($options['disabledCharacterImport']) || !$options['disabledCharacterImport']) {
 							if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterInfo'))) {
 								$this->handleSheet($options);
@@ -557,12 +561,13 @@ class EveAccountUpdateComponent extends Component {
 					$walking = false;
 
 					if ($transaction['@journalTransactionID'] > $last_transaction) {
-						if($transaction['@transactionFor'] == 'personal'  && (floatval($transaction['@price']) < 0 || floatval($transaction['@price']) > 0)) {
+						if(floatval($transaction['@price']) < 0 || floatval($transaction['@price']) > 0) {
 							$tmpWallet = array();
 							$tmpWallet['transactionID'] = intval($transaction['@journalTransactionID']);
 							$tmpWallet['characterID'] = $this->EveOnlineApi->characterID;
 							$tmpWallet['created'] = date("Y-m-d H:i:s",  strtotime($transaction['@transactionDateTime']));
 							$tmpWallet['refTypeID'] = 2;
+							$tmpWallet['transactionFor'] = $transaction['@transactionFor'];
 							$tmpWallet['price'] = floatval($transaction['@price']);
 							$tmpWallet['quantity'] = intval($transaction['@quantity']);
 							$tmpWallet['stationID'] = intval($transaction['@stationID']);
@@ -598,6 +603,7 @@ class EveAccountUpdateComponent extends Component {
 									$tmpWallet['transactionID'] = $tmpJournal['Wallet']['transactionID'];
 								}
 							}
+
 							$this->Wallet->data['Wallet'][] = $tmpWallet;
 						}
 						if (!isset($params['fromID']) || (isset($params['fromID']) && $params['fromID'] > $transaction['@transactionID'])){
