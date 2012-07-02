@@ -599,7 +599,8 @@ class EveAccountUpdateComponent extends Component {
 									'Wallet.other_characterID' => $tmpWallet['other_characterID'],
 									'Wallet.created' => $tmpWallet['created'],
 									'Wallet.amount' => $tmpWallet['amount']
-								)));
+									),
+									'joins' => $this->Wallet->defaultJoins));
 								if(!empty($tmpJournal['Wallet']['transactionID'])) {
 									$tmpWallet['transactionID'] = $tmpJournal['Wallet']['transactionID'];
 								}
