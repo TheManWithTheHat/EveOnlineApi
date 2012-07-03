@@ -354,7 +354,7 @@ class EveOnlineApiComponent extends Component {
 	public function identifyTypeOfID($id) {
 		if($id >= 99000000 && $id <= 100000000) {
 			return "Alliance";
-		} else if($id >= 98000000 && $id < 99000000) {
+		} else if(($id >= 98000000 && $id < 99000000) || in_array($id, array(1119499077))) {
 			return "Corporation"; 
 		} else if($id >= 90000000 && $id < 98000000) {
 			return "Character";

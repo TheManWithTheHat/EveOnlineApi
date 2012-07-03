@@ -522,7 +522,7 @@ class EveAccountUpdateComponent extends Component {
 							$this->Wallet->data['Wallet'][] = $tmpWallet;
 						}
 					}
-					$this->tmpCharData['last_walletjournal'] = $nextlast_transaction;
+//					$this->tmpCharData['last_walletjournal'] = $nextlast_transaction;
 				}
 				if($entries_found >= $limit) {
 					$walking = false;
@@ -536,7 +536,7 @@ class EveAccountUpdateComponent extends Component {
 			}
 		}
 		if(!empty($this->Wallet->data['Wallet'])) {
-			if(!$this->Wallet->saveMany($this->Wallet->data['Wallet'])) {
+			if(!$this->Wallet->saveMany($this->Wallet->data['Wallet'], array('atomic' => true))) {
 				throw new InternalErrorException();
 			}
 		}
@@ -560,10 +560,9 @@ class EveAccountUpdateComponent extends Component {
 				foreach ($this->EveOnlineApi->response['result']['rowset']['row'] as $transaction){
 					//Stop walking?
 					$walking = false;
-
 					if ($transaction['@journalTransactionID'] > $last_transaction) {
 						if(floatval($transaction['@price']) < 0 || floatval($transaction['@price']) > 0) {
-							$tmpWallet = array();
+							$tmpWallet = array('id' => null);
 							$tmpWallet['transactionID'] = intval($transaction['@journalTransactionID']);
 							$tmpWallet['characterID'] = $this->EveOnlineApi->characterID;
 							$tmpWallet['created'] = date("Y-m-d H:i:s",  strtotime($transaction['@transactionDateTime']));
@@ -577,8 +576,6 @@ class EveAccountUpdateComponent extends Component {
 							$tmpWallet['typeName'] = (string) $transaction['@typeName'];
 
 							if($transaction['@transactionType'] == 'sell') {
-								// At Sell orders @journalTransactionID looks to be the TransactionID of the buyer
-//								$tmpWallet['transactionID'] = intval($transaction['@journalTransactionID'])+2;
 								$tmpWallet['other_characterID'] = intval($transaction['@clientID']);
 								$tmpWallet['other_characterName'] = $transaction['@clientName'];
 								$tmpWallet['amount'] = floatval($transaction['@quantity'] * $transaction['@price']);
@@ -591,21 +588,18 @@ class EveAccountUpdateComponent extends Component {
 							}
 							$tmpWallet['quantity_left'] = intval($transaction['@quantity']);
 
-							if($transaction['@transactionType'] == 'sell') {
-								// At Sell orders @journalTransactionID looks to be the TransactionID of the buyer
-								$tmpJournal = $this->Wallet->find('first', array('conditions' => array(
-									'Wallet.characterID' => $this->EveOnlineApi->characterID,
-									'Wallet.refTypeID' => 2,
-									'Wallet.other_characterID' => $tmpWallet['other_characterID'],
-									'Wallet.created' => $tmpWallet['created'],
-									'Wallet.amount' => $tmpWallet['amount']
-									),
-									'joins' => $this->Wallet->defaultJoins));
-								if(!empty($tmpJournal['Wallet']['transactionID'])) {
-									$tmpWallet['transactionID'] = $tmpJournal['Wallet']['transactionID'];
-								}
-							}
-
+							// Buyer and Seller are sharing the same transactionID. So we can't use the transactionID as primaryKey
+							$tmpJournal = $this->Wallet->find('first', array('conditions' => array(
+								'Wallet.characterID' => $this->EveOnlineApi->characterID,
+								'Wallet.refTypeID' => 2,
+								'Wallet.other_characterID' => $tmpWallet['other_characterID'],
+								'Wallet.created' => $tmpWallet['created'],
+								'Wallet.amount' => $tmpWallet['amount']
+								),
+								'joins' => $this->Wallet->defaultJoins));
+							if(!empty($tmpJournal['Wallet']['transactionID'])) {
+								$tmpWallet['id'] = $tmpJournal['Wallet']['id'];
+							} 
 							$this->Wallet->data['Wallet'][] = $tmpWallet;
 						}
 						if (!isset($params['fromID']) || (isset($params['fromID']) && $params['fromID'] > $transaction['@transactionID'])){

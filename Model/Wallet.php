@@ -26,8 +26,6 @@ App::uses('AppModel', 'Model');
 
 class Wallet extends EveOnlineApiAppModel {
 	
-	public $primaryKey = 'transactionID';
-
 	public $defaultOrder = array('Wallet.created' => 'desc', 'Wallet.transactionID' => 'desc');
 
 	public $virtualFields = array(
@@ -69,7 +67,7 @@ class Wallet extends EveOnlineApiAppModel {
 	public $refTypeIDs_reduceTax = array(46, 54, 72, 73, 75);
 
 	public function calculateCorpTaxes($user_id, $tax_rate, $additionalConditions = array()) {
-		$querystring = 'CASE WHEN Wallet.taxAmount = 0 AND (Wallet.amount > 0 OR Wallet.refTypeID IN (' . implode(',', $this->refTypeIDs_reduceTax) . ')) THEN Wallet.amount ELSE 0 END';
+		$querystring = 'CASE WHEN Wallet.taxAmount = 0 AND (Wallet.amount > 0 OR Wallet.taxreduce = 1 OR Wallet.refTypeID IN (' . implode(',', $this->refTypeIDs_reduceTax) . ')) THEN Wallet.amount ELSE 0 END';
 		$result = $this->find('all', array(
 			'fields' => array(
 				'SUM(' . $querystring . ') AS `sumTaxable`',
