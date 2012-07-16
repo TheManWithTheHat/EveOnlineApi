@@ -531,6 +531,17 @@ class EveAccountUpdateComponent extends Component {
 								$tmpWallet['other_characterID'] = intval($transaction['@ownerID1']);
 								$tmpWallet['other_characterName'] = (string) $transaction['@ownerName1'];
 							}
+							// Buyer and Seller are sharing the same transactionID. So we can't use the transactionID as primaryKey
+							$tmpJournal = $this->Wallet->find('first', array('conditions' => array(
+								'Wallet.characterID' => $this->EveOnlineApi->characterID,
+								'Wallet.created' => $tmpWallet['created'],
+								'Wallet.amount' => $tmpWallet['amount'],
+								'Wallet.transactionID' => $tmpWallet['transactionID'],
+								),
+								'joins' => $this->Wallet->defaultJoins));
+							if(!empty($tmpJournal['Wallet']['transactionID'])) {
+								$tmpWallet['id'] = $tmpJournal['Wallet']['id'];
+							} 
 							$this->Wallet->data['Wallet'][] = $tmpWallet;
 						}
 					}
