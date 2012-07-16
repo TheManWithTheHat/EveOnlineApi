@@ -54,6 +54,8 @@ class EveAccountUpdateComponent extends Component {
 		}
 		$this->EveOnlineApi->init($this->Account->data['Account']['keyID'], $this->Account->data['Account']['vCode']);
 		$result = $this->EveOnlineApi->getAPIKeyInfo();
+		
+
 		if($result) {
 			$this->accessMask = $this->EveOnlineApi->response['result']['key']['@accessMask'];
 			$this->Account->data['Account']['accessMask'] = intval($this->EveOnlineApi->response['result']['key']['@accessMask']);
@@ -82,7 +84,13 @@ class EveAccountUpdateComponent extends Component {
 					App::import('Model', 'EveOnlineApi.Character');
 					$this->Character = new Character();
 					$this->Character->newdata = array();
+
+					// Creating a list of all characters on the eve online account for deleting old characters
+					$current_character_list = array();
+
 					foreach($characters as $character) {
+						// Adding current character to all characters list
+						$current_character_list[] = intval($character['@characterID']);
 						$this->Character->id = intval($character['@characterID']);
 						$this->Character->data = $this->Character->read();
 						$this->EveOnlineApi->characterID = $character['@characterID'];
@@ -181,6 +189,10 @@ class EveAccountUpdateComponent extends Component {
 						if(!$this->Character->saveMany($this->Character->newdata['Character'])) {
 							throw new InternalErrorException();
 						}
+					}
+					// Deleting old characters
+					if(!empty($current_character_list)) {
+						$this->Character->deleteAll(array('Character.account_id' => $this->Account->id,'Character.characterID NOT' => $current_character_list));
 					}
 				}
 			} else {
@@ -522,7 +534,7 @@ class EveAccountUpdateComponent extends Component {
 							$this->Wallet->data['Wallet'][] = $tmpWallet;
 						}
 					}
-//					$this->tmpCharData['last_walletjournal'] = $nextlast_transaction;
+					$this->tmpCharData['last_walletjournal'] = $nextlast_transaction;
 				}
 				if($entries_found >= $limit) {
 					$walking = false;
@@ -591,11 +603,12 @@ class EveAccountUpdateComponent extends Component {
 							// Buyer and Seller are sharing the same transactionID. So we can't use the transactionID as primaryKey
 							$tmpJournal = $this->Wallet->find('first', array('conditions' => array(
 								'Wallet.characterID' => $this->EveOnlineApi->characterID,
-								'Wallet.refTypeID' => 2,
-								'Wallet.other_characterID' => $tmpWallet['other_characterID'],
 								'Wallet.created' => $tmpWallet['created'],
-								'Wallet.amount' => $tmpWallet['amount']
-								),
+								'Wallet.amount' => $tmpWallet['amount'],
+								'OR' => array(
+									'Wallet.other_characterID' => $tmpWallet['other_characterID'],
+									'Wallet.transactionID' => $tmpWallet['transactionID'],
+								)),
 								'joins' => $this->Wallet->defaultJoins));
 							if(!empty($tmpJournal['Wallet']['transactionID'])) {
 								$tmpWallet['id'] = $tmpJournal['Wallet']['id'];
@@ -615,7 +628,7 @@ class EveAccountUpdateComponent extends Component {
 				$this->tmpCharData['last_transaction'] = intval($nextlast_transaction);
 			} else {
 				//Error Handling
-				$this->suberror['CharacterWalletTransactions'] = $this->EveOnlineApi->error;
+				$this->suberror['CharacterWalletTransactions'] = $this->EveOnlineAp6039373270i->error;
 			}
 		}
 		if(!empty($this->Wallet->data['Wallet'])) {
