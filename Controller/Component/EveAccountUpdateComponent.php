@@ -174,11 +174,11 @@ class EveAccountUpdateComponent extends Component {
 							}
 	
 							if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletJournal'))) {
-								$this->handleWalletJournal(isset($this->Character->data['Character']['last_walletjournal']) ? $this->Character->data['Character']['last_walletjournal'] : null);
+								$this->handleWalletJournal(isset($this->Character->data['Character']['lastWalletJournal']) ? $this->Character->data['Character']['lastWalletJournal'] : null);
 							}
 	
 							if($this->EveOnlineApi->validateAccessMask($this->accessMask, array('CharacterWalletTransactions'))) {
-								$this->handleWalletTransactions(isset($this->Character->data['Character']['last_walletjournal']) ? $this->Character->data['Character']['last_walletjournal'] : null, $options);
+								$this->handleWalletTransactions(isset($this->Character->data['Character']['lastWalletTransaction']) ? $this->Character->data['Character']['lastWalletTransaction'] : null, $options);
 							}
 							$this->tmpCharData['lastApiUpdate'] = date('Y-m-d H:i:s', time());
 						}
@@ -536,8 +536,10 @@ class EveAccountUpdateComponent extends Component {
 								'Wallet.characterID' => $this->EveOnlineApi->characterID,
 								'Wallet.created' => $tmpWallet['created'],
 								'Wallet.amount' => $tmpWallet['amount'],
-								'Wallet.transactionID' => $tmpWallet['transactionID'],
-								),
+								'OR' => array(
+									'Wallet.other_characterID' => $tmpWallet['other_characterID'],
+									'Wallet.transactionID' => $tmpWallet['transactionID'],
+								)),
 								'joins' => $this->Wallet->defaultJoins));
 							if(!empty($tmpJournal['Wallet']['transactionID'])) {
 								$tmpWallet['id'] = $tmpJournal['Wallet']['id'];
@@ -545,7 +547,7 @@ class EveAccountUpdateComponent extends Component {
 							$this->Wallet->data['Wallet'][] = $tmpWallet;
 						}
 					}
-					$this->tmpCharData['last_walletjournal'] = $nextlast_transaction;
+					$this->tmpCharData['lastWalletJournal'] = $nextlast_transaction;
 				}
 				if($entries_found >= $limit) {
 					$walking = false;
@@ -558,6 +560,7 @@ class EveAccountUpdateComponent extends Component {
 				break;
 			}
 		}
+
 		if(!empty($this->Wallet->data['Wallet'])) {
 			if(!$this->Wallet->saveMany($this->Wallet->data['Wallet'], array('atomic' => true))) {
 				throw new InternalErrorException();
@@ -580,7 +583,12 @@ class EveAccountUpdateComponent extends Component {
 					$walking = false;
 					break;
 				}
-				foreach ($this->EveOnlineApi->response['result']['rowset']['row'] as $transaction){
+				if(!empty($this->EveOnlineApi->response['result']['rowset']['row']) && is_array($this->EveOnlineApi->response['result']['rowset']['row']) && empty($this->EveOnlineApi->response['result']['rowset']['row'][0])) {
+					$all_transactions = array(0 => $this->EveOnlineApi->response['result']['rowset']['row']);
+				} else {
+					$all_transactions = $this->EveOnlineApi->response['result']['rowset']['row'];
+				}
+				foreach ($all_transactions as $transaction){
 					//Stop walking?
 					$walking = false;
 					if ($transaction['@journalTransactionID'] > $last_transaction) {
@@ -636,10 +644,10 @@ class EveAccountUpdateComponent extends Component {
 						}
 					}
 				}
-				$this->tmpCharData['last_transaction'] = intval($nextlast_transaction);
+				$this->tmpCharData['lastWalletTransaction'] = intval($nextlast_transaction);
 			} else {
 				//Error Handling
-				$this->suberror['CharacterWalletTransactions'] = $this->EveOnlineAp6039373270i->error;
+				$this->suberror['CharacterWalletTransactions'] = $this->EveOnlineApi->error;
 			}
 		}
 		if(!empty($this->Wallet->data['Wallet'])) {
