@@ -28,22 +28,8 @@ App::uses('EveOnlineApiAppModel', 'EveOnlineApi.Model');
  *
  */
 class StaStation extends EveOnlineApiAppModel {
-/**
- * Use database config
- *
- * @var string
- */
-	public $useDbConfig = 'evedump';
-/**
- * Use table
- *
- * @var mixed False or table name
- */
+
 	public $useTable = 'staStations';
-/**
- * Primary key field
- *
- * @var string
- */
+
 	public $primaryKey = 'stationID';
 }

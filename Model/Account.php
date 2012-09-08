@@ -116,6 +116,7 @@ class Account extends EveOnlineApiAppModel {
 				//'last' => false, // Stop validation after this rule
 				//'on' => 'create', // Limit validation to 'create' or 'update' operations
 			),
+/*
 			'multiple' => array(
 				'rule' => array('checkAccessMask'),
 				'message' => 'Unzuässige AccessMask (Mindestanforderung: 93194506)',
@@ -124,6 +125,7 @@ class Account extends EveOnlineApiAppModel {
 				//'last' => false, // Stop validation after this rule
 				//'on' => 'create', // Limit validation to 'create' or 'update' operations
 			),
+*/
 		),
 		'type' => array(
 			'notempty' => array(
@@ -181,12 +183,18 @@ class Account extends EveOnlineApiAppModel {
 
 	public function checkAccessMask($check) {
 		App::import('Component', 'EveOnlineApi', 'EveOnlineApi');
+		$collection = new ComponentCollection();
+		$this->EveOnlineApi = new EveOnlineApiComponent($collection);
 		if($check['accessMask'] == 268435455) {
 			//Full API Access
 			return true;
 		} else {
 			//TODO Configuration file etc.
-			return $this->EveOnlineApi->validateAccessMask($accessMask, $names = array('CharacterContracts', 'CharacterInfo', 'CharacterSkillQueue', 'CharacterSkillInTraining', 'CharacterSheet', 'CharacterStandings', 'CharacterKillLog', 'CharacterAssetList'));
+			if($this->data['Account']['type'] == 'Corporation') {
+				return true;	
+			} else {
+				return $this->EveOnlineApi->validateAccessMask($check['accessMask'], $names = array('CharacterInfo'));
+			}
 		}
 	}
 }

@@ -373,22 +373,26 @@ class EveOnlineApiComponent extends Component {
 		}
 	}
 
-	public function getImageURL($id, $size = 64) {
+	public function getImageURL($id, $size = 64, $isInvType = false) {
 		if(!empty($id)) {
-			$type = $this->identifyTypeOfID($id);
-			switch($type) {
-				case 'Alliance' :
-					return 'http://image.eveonline.com/Alliance/' . $id . '_' . $size . '.jpg';
-					break;
-				case 'NSC Corporation' :
-				case 'Corporation' :
-					return 'http://image.eveonline.com/Corporation/' . $id . '_' . $size . '.png';
-					break;
-				case 'NSC Character' :
-				case 'Character' :
-				default:
-					return 'http://image.eveonline.com/Character/' . $id . '_' . $size . '.jpg';
-					break;
+			if(!$isInvType) {
+				$type = $this->identifyTypeOfID($id);
+				switch($type) {
+					case 'Alliance' :
+						return 'https://image.eveonline.com/Alliance/' . $id . '_' . $size . '.jpg';
+						break;
+					case 'NSC Corporation' :
+					case 'Corporation' :
+						return 'https://image.eveonline.com/Corporation/' . $id . '_' . $size . '.png';
+						break;
+					case 'NSC Character' :
+					case 'Character' :
+					default:
+						return 'https://image.eveonline.com/Character/' . $id . '_' . $size . '.jpg';
+						break;
+				}
+			} else {
+				return WEBROOT_WWW . 'EveOnlineApi/img/types/' . $id . '_' . $size . '.png';
 			}
 		} else {
 			return false;
@@ -826,7 +830,7 @@ class EveOnlineApiComponent extends Component {
 	* http://wiki.eveonline.com/en/wiki/EVE_API_Corporation_Wallet_Journal
 	*/
 
-	public function getCorporationWalletJournal() {
+	public function getCorporationWalletJournal($params = array()) {
 		return $this->_request($this->urls['CorporationWalletJournal']);
 	}
 
@@ -835,7 +839,7 @@ class EveOnlineApiComponent extends Component {
 	* http://wiki.eveonline.com/en/wiki/EVE_API_Corporation_Wallet_Transactions
 	*/
 
-	public function getCorporationWalletTransactions() {
+	public function getCorporationWalletTransactions($params = array()) {
 		return $this->_request($this->urls['CorporationWalletTransactions']);
 	}
 

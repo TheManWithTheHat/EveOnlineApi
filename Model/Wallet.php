@@ -28,6 +28,8 @@ class Wallet extends EveOnlineApiAppModel {
 	
 	public $defaultOrder = array('Wallet.created' => 'desc', 'Wallet.transactionID' => 'desc');
 
+	public $cacheQueries = true;
+	
 	public $virtualFields = array(
 		'isTaxFree' => 'CASE WHEN Account2.user_id = Account.user_id OR Wallet.taxfree = 1 THEN 1 ELSE 0 END'
 	);
@@ -64,7 +66,7 @@ class Wallet extends EveOnlineApiAppModel {
 
 
 	// Defining RefTypeIDs which are reducing the tax
-	public $refTypeIDs_reduceTax = array(46, 54, 72, 73, 75);
+	public $refTypeIDs_reduceTax = array(46, 54, 56, 57 ,58, 59, 60, 61, 62, 72, 73, 75, 96, 97);
 
 	public function calculateCorpTaxes($user_id, $tax_rate, $additionalConditions = array()) {
 		$querystring = 'CASE WHEN Wallet.taxAmount = 0 AND (Wallet.amount > 0 OR Wallet.taxreduce = 1 OR Wallet.refTypeID IN (' . implode(',', $this->refTypeIDs_reduceTax) . ')) THEN Wallet.amount ELSE 0 END';
@@ -99,6 +101,60 @@ class Wallet extends EveOnlineApiAppModel {
 		}
 	}
 
+	public function calculateRevenues($user_id, $additionalConditions = array()) {
+		$result = $this->find('all', array(
+			'fields' => array(
+				'SUM(CASE WHEN Wallet.refTypeID IN (2) THEN Wallet.amount ELSE 0 END) AS `sumMarketTransaction`',
+				'SUM(CASE WHEN Wallet.refTypeID IN (7, 21, 33, 34) THEN Wallet.amount ELSE 0 END) AS `sumMissionReward`',
+				'SUM(CASE WHEN Wallet.refTypeID IN (10) AND Wallet.taxfree = 0 AND Account2.user_id != Account.user_id THEN Wallet.amount ELSE 0 END) AS `sumPlayerDonation`',
+				'SUM(CASE WHEN Wallet.refTypeID IN (16, 17, 85) THEN Wallet.amount ELSE 0 END) AS `sumBounty`',
+				'SUM(CASE WHEN Wallet.refTypeID IN (68) THEN Wallet.amount ELSE 0 END) AS `sumContractReward`',
+				'SUM(CASE WHEN Wallet.refTypeID IN (37) THEN Wallet.amount ELSE 0 END) AS `sumCorporationAccountWithdrawal`',
+				'SUM(CASE WHEN Wallet.refTypeID IN (38) THEN Wallet.amount ELSE 0 END) AS `sumCorporationDividendPayment`'
+			),
+			'order' => $this->defaultOrder,
+			'conditions' => array_merge(
+				$additionalConditions, 
+				array(
+					'Account.user_id' => $user_id,
+					'Wallet.amount > 0'
+				)
+			),
+			'joins' => $this->defaultJoins
+		));
+		if(!empty($result[0][0])) {
+			$return = $result[0][0];
+		} else {
+			$return = array(	'sumMarketTransaction' => 0,
+						'sumMissionReward' => 0,
+						'sumPlayerDonation' => 0,
+						'sumBounty' => 0,
+						'sumContractReward' => 0,
+						'sumCorporationAccountWithdrawal' => 0,
+						'sumCorporationDividendPayment' => 0
+			);
+		}
+		return __arrayPercentage($return);
+	}
 	
+}
+
+function __arrayPercentage($array) {
+	$new = array();
+	$sum = array_sum($array);
+	if(empty($array)) {
+		return false;
+	} else {
+		foreach($array as $key => $value) {
+			if($sum == 0) {
+				$new[$key] = 0;
+			} else if($sum == floor($value)) {
+				$new[$key] = 100;
+			} else {
+				$new[$key] = floor((100 / $sum) * $value);
+			}
+		}
+	}
+	return $new;
 }
 

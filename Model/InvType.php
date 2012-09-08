@@ -28,22 +28,8 @@ App::uses('EveOnlineApiAppModel', 'EveOnlineApi.Model');
  *
  */
 class InvType extends EveOnlineApiAppModel {
-/**
- * Use database config
- *
- * @var string
- */
-	public $useDbConfig = 'evedump';
-/**
- * Use table
- *
- * @var mixed False or table name
- */
+
 	public $useTable = 'invTypes';
-/**
- * Primary key field
- *
- * @var string
- */
+
 	public $primaryKey = 'typeID';
 }
